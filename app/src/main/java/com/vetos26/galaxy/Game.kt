@@ -103,6 +103,7 @@ class Game(context: Context) {
     private var lives = 3
     private var level = 1
     private var extraLifeGiven = false
+    private var gameOverRank = 0
 
     private val player = Player()
     private var missile: Bullet? = null
@@ -272,6 +273,7 @@ class Game(context: Context) {
                 if (stateTime > 2.6f && (!divers || stateTime > 6f)) {
                     lives--
                     if (lives <= 0) {
+                        gameOverRank = settings.addResult(score, level)
                         settings.save()
                         setState(State.GAME_OVER)
                     } else {
@@ -296,7 +298,10 @@ class Game(context: Context) {
                 updateFormation(dt)
                 updateEnemies(dt)
                 updateEffects(dt)
-                if (stateTime > 4f || ((tap || select) && stateTime > 1.5f)) goToMainMenu()
+                if (stateTime > 4.5f || ((tap || select) && stateTime > 1.5f)) {
+                    // a result that made it into the top-10 -> show the table
+                    goToMainMenu(if (gameOverRank > 0) Menu.Screen.SCORES else Menu.Screen.MAIN)
+                }
             }
             State.LOADING, State.MENU -> Unit
         }
@@ -329,6 +334,8 @@ class Game(context: Context) {
         extraLifeGiven = false
         firstReady = true
         paused = false
+        gameOverRank = 0
+        settings.lastRank = 0
         explosions.clear()
         popups.clear()
         spawnWave()
@@ -348,13 +355,13 @@ class Game(context: Context) {
         fireBuffer = 0f
     }
 
-    private fun goToMainMenu() {
+    private fun goToMainMenu(screen: Menu.Screen = Menu.Screen.MAIN) {
         paused = false
         stars.speedFactor = 1f
         settings.save()
         sound.resumeAll()
         controls.reset()
-        menu.open(Menu.Screen.MAIN)
+        menu.open(screen)
         setState(State.MENU)
     }
 
@@ -859,6 +866,14 @@ class Game(context: Context) {
             }
             State.GAME_OVER -> {
                 PixelFont.drawShadow(c, "GAME OVER", VW / 2f, my, 3.4f, RED, Align.CENTER)
+                val msg = when (gameOverRank) {
+                    0 -> ""
+                    1 -> "НОВЫЙ РЕКОРД!"
+                    else -> "$gameOverRank МЕСТО В ТАБЛИЦЕ!"
+                }
+                if (msg.isNotEmpty() && blink(3f)) {
+                    PixelFont.drawShadow(c, msg, VW / 2f, my + 36f, 2f, YELLOW, Align.CENTER)
+                }
             }
             else -> Unit
         }

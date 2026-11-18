@@ -44,27 +44,55 @@ class Screen:
 top, bottom = 0, VH
 # main menu
 s = Screen()
-s.text('HI-SCORE', 180, 6, 1.8, RED, 'c'); s.text('005000', 180, 22, 1.8, WHITE, 'c')
-s.spr(None, 180, 52+42, path=os.path.join(ROOT, 'app/src/main/assets/logo.png'))
-s.text('DENDY STYLE SPACE SHOOTER', 180, 52+84+10, 1.4, CY, 'c', True)
-it = 52+84+46
-for i, t in enumerate(['НОВАЯ ИГРА', 'НАСТРОЙКИ', 'АВТОРЫ']):
-    cy = it + i*50; s.box(cy, 240, 40, i == 0)
-    s.text(t, 180, cy-7, 2.2, YEL if i == 0 else WHITE, 'c')
-    if i == 0:
+s.text('HI-SCORE', 180, 6, 1.8, RED, 'c'); s.text('012340', 180, 22, 1.8, WHITE, 'c')
+items = ['НОВАЯ ИГРА', 'НАСТРОЙКИ', 'ТАБЛИЦА ОЧКОВ', 'АВТОРЫ']
+bt = 52 + max(0, (bottom - 30) - 52 - (84 + 46 + len(items) * 50)) * 0.4
+s.spr(None, 180, bt + 42, path=os.path.join(ROOT, 'app/src/main/assets/logo.png'))
+s.text('DENDY STYLE SPACE SHOOTER', 180, bt + 84 + 10, 1.4, CY, 'c', True)
+it = bt + 84 + 46
+for i, t in enumerate(items):
+    cy = it + i*50; s.box(cy, 240, 40, i == 2)
+    s.text(t, 180, cy-7, 2.2, YEL if i == 2 else WHITE, 'c')
+    if i == 2:
         s.spr('enemy_flagship_1', 180-120-20, cy, 28); s.spr('enemy_flagship_1', 180+120+20, cy, 28)
-y = it + 100 + 44
-s.text('- ТАБЛИЦА ОЧКОВ -', 180, y, 1.6, PINK, 'c', True); y += 16
-s.text('В СТРОЮ', 190, y, 1.4, GREY, 'c'); s.text('В АТАКЕ', 290, y, 1.4, GREY, 'c'); y += 12 + 17
-for n, a, b in [('flagship','60','150-800'),('red','50','100'),('purple','40','80'),('blue','30','60')]:
-    s.spr('enemy_%s_1' % n, 86, y); s.text(a, 190, y-6, 1.8, YEL, 'c'); s.text(b, 290, y-6, 1.8, YEL, 'c'); y += 34
-s.text('(C) 2026 VETOS26   V1.0.4', 180, bottom-16, 1.2, GREY, 'c')
+s.text('(C) 2026 VETOS26   V1.0.7', 180, bottom-16, 1.2, GREY, 'c')
 s.save('menu_main.png')
+# score table
+s = Screen()
+s.text('ТАБЛИЦА ОЧКОВ', 180, 22, 3.2, YEL, 'c', True)
+backTop = bottom - 40 - 20
+y = 66
+s.text('- ЛУЧШИЕ РЕЗУЛЬТАТЫ -', 180, y, 1.6, PINK, 'c', True); y += 18
+s.text('МЕСТО', 30, y, 1.2, GREY, 'c'); s.text('ОЧКИ', 150, y, 1.2, GREY, 'r')
+s.text('ЭТАП', 204, y, 1.2, GREY, 'c'); s.text('ДАТА', 330, y, 1.2, GREY, 'r'); y += 14
+rowH = max(13, min(19, (backTop - y - 160) / 10)); size = 1.8 if rowH >= 16 else 1.5
+data = [(12340, 4, '18.11.26'), (9870, 3, '18.11.26'), (7420, 3, '17.11.26'), (5110, 2, '17.11.26'), (2860, 1, '16.11.26')]
+for i in range(10):
+    e = data[i] if i < len(data) else None
+    last = i == 2
+    col = YEL if (i == 0 or last) else (WHITE if e else (70, 70, 100))
+    if last:
+        s.d.rectangle([14*K, (y-2)*K, 346*K, (y+7*size+2)*K], fill=(70, 62, 20))
+    s.text('%d.' % (i+1), 44, y, size, CY if e else col, 'r')
+    if e:
+        s.text('%06d' % e[0], 150, y, size, col, 'r'); s.text(str(e[1]), 204, y, size, col, 'c'); s.text(e[2], 330, y, size, col, 'r')
+    else:
+        s.text('------', 150, y, size, col, 'r'); s.text('-', 204, y, size, col, 'c'); s.text('--.--.--', 330, y, size, col, 'r')
+    y += rowH
+y += 20
+s.text('- ОЧКИ ЗА ПРИШЕЛЬЦЕВ -', 180, y, 1.6, PINK, 'c', True); y += 16
+s.text('В СТРОЮ', 190, y, 1.4, GREY, 'c'); s.text('В АТАКЕ', 290, y, 1.4, GREY, 'c')
+ar = max(24, min(36, (backTop - 10 - y - 12) / 4)); y += 12 + ar/2
+for n, a_, b_ in [('flagship','60','150-800'),('red','50','100'),('purple','40','80'),('blue','30','60')]:
+    s.spr('enemy_%s_1' % n, 86, y, min(32, ar)); s.text(a_, 190, y-6, 1.8, YEL, 'c'); s.text(b_, 290, y-6, 1.8, YEL, 'c'); y += ar
+s.box(bottom-40, 240, 40, True); s.text('НАЗАД', 180, bottom-47, 2.2, YEL, 'c')
+s.spr('enemy_flagship_1', 40, bottom-40, 28); s.spr('enemy_flagship_1', 320, bottom-40, 28)
+s.save('menu_scores.png')
 # settings
 s = Screen()
 s.text('НАСТРОЙКИ', 180, 22, 3.2, YEL, 'c', True)
 rows = [('ЗВУК','ВКЛ'),('ВИБРАЦИЯ','ВКЛ'),('АВТООГОНЬ','ВЫКЛ'),('УПРАВЛЕНИЕ','КНОПКИ'),('КНОПКА ОГНЯ','СПРАВА'),
-        ('РАЗМЕР КНОПОК','СРЕДНИЕ'),('СЛОЖНОСТЬ','НОРМА'),('СБРОС РЕКОРДА','5000'),('НАЗАД','')]
+        ('РАЗМЕР КНОПОК','СРЕДНИЕ'),('СЛОЖНОСТЬ','НОРМА'),('СБРОС РЕКОРДОВ','12340'),('НАЗАД','')]
 step = min(42, (bottom-64-34)/9)
 for i, (l, v) in enumerate(rows):
     cy = 64 + i*step + step/2; sel = i == 3
@@ -91,8 +119,8 @@ s.box(bottom-40, 240, 40, True); s.text('НАЗАД', 180, bottom-47, 2.2, YEL, 
 s.spr('enemy_flagship_1', 40, bottom-40, 28); s.spr('enemy_flagship_1', 320, bottom-40, 28)
 s.save('menu_credits.png')
 # combined preview
-ims = [Image.open(os.path.join(ROOT, 'docs', n)) for n in ('menu_main.png', 'menu_settings.png', 'menu_credits.png')]
-w = sum(i.width for i in ims) + 40
+ims = [Image.open(os.path.join(ROOT, 'docs', n)) for n in ('menu_main.png', 'menu_settings.png', 'menu_scores.png', 'menu_credits.png')]
+w = sum(i.width for i in ims) + 20 * (len(ims) - 1)
 out = Image.new('RGB', (w, ims[0].height), (30, 30, 50)); x = 0
 for i in ims: out.paste(i, (x, 0)); x += i.width + 20
 out.resize((w//2, ims[0].height//2), Image.NEAREST).save(os.path.join(ROOT, 'docs', 'menu_preview.png'))
