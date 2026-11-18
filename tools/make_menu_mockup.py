@@ -107,11 +107,15 @@ s.save('menu_settings.png')
 s = Screen()
 s.text('АВТОРЫ', 180, 22, 3.2, YEL, 'c', True)
 mk = re.search(r'private val credits = listOf\((.*?)\n    \)', open(os.path.join(ROOT, 'app/src/main/java/com/vetos26/galaxy/Menu.kt'), encoding='utf-8').read(), re.S).group(1)
-y = 70
+y = 78
+ORANGE = (248, 152, 40)
 for t, st in re.findall(r'"([^"]*)" to (\d)', mk):
-    if st == '0': y += 6; s.text(t, 180, y, 1.5, CY, 'c'); y += 14
-    elif st == '1': s.text(t, 180, y, 2, WHITE, 'c', True); y += 18
-    else: y += 14; s.text(t, 180, y, 2.4, YEL, 'c', True); y += 22
+    if st == '0': y += 16; s.text(t, 180, y, 1.6, CY, 'c'); y += 15
+    elif st == '4': s.text(t, 180, y, 1.6, CY, 'c'); y += 15
+    elif st == '1': y += 3; s.text(t, 180, y, 2.4, WHITE, 'c', True); y += 20
+    elif st == '3': s.text(t, 180, y, 3, ORANGE, 'c', True); y += 26
+    else:
+        y += 26; sz = min(2.4, (VW - 24) / (len(t) * 6 - 1)); s.text(t, 180, y, sz, YEL, 'c', True); y += 7 * sz + 8
 py = y + 34
 for i, n in enumerate(['player', 'enemy_blue_1', 'enemy_purple_2', 'enemy_red_1', 'enemy_flagship_2']):
     s.spr(n, 300 - i*40, py, 28 if i == 0 else 26)

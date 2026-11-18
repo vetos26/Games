@@ -95,7 +95,7 @@ object PixelFont {
     /** Cyrillic letters drawn with the identical Latin glyph. */
     private val aliases = mapOf(
         'А' to 'A', 'В' to 'B', 'Е' to 'E', 'Ё' to 'E', 'К' to 'K', 'М' to 'M', 'Н' to 'H',
-        'О' to 'O', 'Р' to 'P', 'С' to 'C', 'Т' to 'T', 'Х' to 'X',
+        'О' to 'O', 'Р' to 'P', 'С' to 'C', 'Т' to 'T', 'Х' to 'X', '—' to '-', '–' to '-',
     )
 
     private val glyphs = HashMap<Char, Bitmap>()
