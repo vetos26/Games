@@ -55,7 +55,7 @@ for i, t in enumerate(items):
     s.text(t, 180, cy-7, 2.2, YEL if i == 2 else WHITE, 'c')
     if i == 2:
         s.spr('enemy_flagship_1', 180-120-20, cy, 28); s.spr('enemy_flagship_1', 180+120+20, cy, 28)
-s.text('(C) 2026 HOME STUDIO   V1.0.7', 180, bottom-16, 1.2, GREY, 'c')
+s.text('(C) 2026 Home Studio   V1.0.7', 180, bottom-16, 1.2, GREY, 'c')
 s.save('menu_main.png')
 # score table
 s = Screen()

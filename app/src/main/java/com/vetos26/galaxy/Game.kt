@@ -808,22 +808,6 @@ class Game(context: Context) {
         PixelFont.drawShadow(c, "ЗАГРУЗКА$dots", bx, by + 22f, 2f, WHITE)
         PixelFont.drawShadow(c, "${(p * 100).toInt()}%", bx + bw, by + 22f, 2f, YELLOW, Align.RIGHT)
 
-        // credits text (same as in the "Авторы" section) in the free space between
-        // the loading bar and the copyright; fades in, shrinks on short screens
-        val areaTop = by + 46f
-        val areaBottom = vh - 50f
-        val area = areaBottom - areaTop
-        if (area > 60f) {
-            var s = (area / Credits.height(compact = true)).coerceIn(0.55f, 1f)
-            var h = Credits.height(compact = true, scale = s)
-            if (h > area) {
-                s = (s * area / h).coerceAtLeast(0.5f)
-                h = Credits.height(compact = true, scale = s)
-            }
-            val creditsAlpha = (255 * ((stateTime - 0.3f) / 0.6f).coerceIn(0f, 1f)).toInt()
-            Credits.draw(c, areaTop + max(0f, (area - h) / 2f), compact = true, alpha = creditsAlpha, scale = s)
-        }
-
         PixelFont.draw(c, "(C) 2026 HomeStudio", VW / 2f, vh - 40f, 1.5f, GREY, Align.CENTER)
         PixelFont.draw(c, "MADE WITH KOTLIN", VW / 2f, vh - 24f, 1.5f, GREY, Align.CENTER)
     }

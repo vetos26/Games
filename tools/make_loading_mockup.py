@@ -67,13 +67,6 @@ def render(vh, progress=0.64):
     ship = Image.open(os.path.join(ROOT, 'app/src/main/assets/sprites/player.png')).resize((32*K, 32*K), Image.NEAREST)
     img.alpha_composite(ship, (int((bx+bw*progress-16)*K), int((by-22-16)*K)))
     text('ЗАГРУЗКА...', bx, by+22, 2, WHITE, shadow=True); text('%d%%' % (progress*100), bx+bw, by+22, 2, YEL, 'r', True)
-    area_top, area_bottom = by + 46, vh - 50
-    area = area_bottom - area_top
-    s = max(0.55, min(1, area / credits(0, 1, False)))
-    h = credits(0, s, False)
-    if h > area:
-        s = max(0.5, s*area/h); h = credits(0, s, False)
-    credits(area_top + max(0, (area-h)/2), s)
     text('(C) 2026 HomeStudio', 180, vh-40, 1.5, GREY, 'c'); text('MADE WITH KOTLIN', 180, vh-24, 1.5, GREY, 'c')
     return img.convert('RGB').resize((VW*2, int(vh*2)), Image.NEAREST)
 
