@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.Galaxy" parent="android:Theme.Material.NoActionBar.Fullscreen">
+        <item name="android:windowBackground">@color/space_black</item>
+        <item name="android:statusBarColor">@color/space_black</item>
+        <item name="android:navigationBarColor">@color/space_black</item>
+        <item name="android:windowSplashScreenBackground">@color/space_black</item>
+        <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
+    </style>
+</resources>
