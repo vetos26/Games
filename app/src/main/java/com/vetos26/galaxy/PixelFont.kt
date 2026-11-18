@@ -66,6 +66,36 @@ object PixelFont {
         '=' to arrayOf(".....", ".....", "XXXXX", ".....", "XXXXX", ".....", "....."),
         '%' to arrayOf("XX...", "XX..X", "...X.", "..X..", ".X...", "X..XX", "...XX"),
         '\'' to arrayOf("..X..", "..X..", ".X...", ".....", ".....", ".....", "....."),
+        '+' to arrayOf(".....", "..X..", "..X..", "XXXXX", "..X..", "..X..", "....."),
+        '*' to arrayOf(".....", "X.X.X", ".XXX.", "XXXXX", ".XXX.", "X.X.X", "....."),
+        // ---- Cyrillic (letters that look like Latin ones are aliased below)
+        'Б' to arrayOf("XXXXX", "X....", "X....", "XXXX.", "X...X", "X...X", "XXXX."),
+        'Г' to arrayOf("XXXXX", "X....", "X....", "X....", "X....", "X....", "X...."),
+        'Д' to arrayOf("..XX.", ".X.X.", ".X.X.", ".X.X.", ".X.X.", "XXXXX", "X...X"),
+        'Ж' to arrayOf("X.X.X", "X.X.X", ".XXX.", "..X..", ".XXX.", "X.X.X", "X.X.X"),
+        'З' to arrayOf(".XXX.", "X...X", "....X", "..XX.", "....X", "X...X", ".XXX."),
+        'И' to arrayOf("X...X", "X...X", "X..XX", "X.X.X", "XX..X", "X...X", "X...X"),
+        'Й' to arrayOf(".X.X.", "..X..", "X...X", "X..XX", "X.X.X", "XX..X", "X...X"),
+        'Л' to arrayOf("..XXX", ".X..X", ".X..X", ".X..X", ".X..X", ".X..X", "X...X"),
+        'П' to arrayOf("XXXXX", "X...X", "X...X", "X...X", "X...X", "X...X", "X...X"),
+        'У' to arrayOf("X...X", "X...X", "X...X", ".XXXX", "....X", "X...X", ".XXX."),
+        'Ф' to arrayOf("..X..", ".XXX.", "X.X.X", "X.X.X", "X.X.X", ".XXX.", "..X.."),
+        'Ц' to arrayOf("X..X.", "X..X.", "X..X.", "X..X.", "X..X.", "XXXXX", "....X"),
+        'Ч' to arrayOf("X...X", "X...X", "X...X", ".XXXX", "....X", "....X", "....X"),
+        'Ш' to arrayOf("X.X.X", "X.X.X", "X.X.X", "X.X.X", "X.X.X", "X.X.X", "XXXXX"),
+        'Щ' to arrayOf("X.X.X", "X.X.X", "X.X.X", "X.X.X", "X.X.X", "XXXXX", "....X"),
+        'Ъ' to arrayOf("XX...", ".X...", ".X...", ".XXX.", ".X..X", ".X..X", ".XXX."),
+        'Ы' to arrayOf("X...X", "X...X", "X...X", "XXX.X", "X.X.X", "X.X.X", "XXX.X"),
+        'Ь' to arrayOf("X....", "X....", "X....", "XXXX.", "X...X", "X...X", "XXXX."),
+        'Э' to arrayOf(".XXX.", "X...X", "....X", "..XXX", "....X", "X...X", ".XXX."),
+        'Ю' to arrayOf("X..X.", "X.X.X", "X.X.X", "XXX.X", "X.X.X", "X.X.X", "X..X."),
+        'Я' to arrayOf(".XXXX", "X...X", "X...X", ".XXXX", "..X.X", ".X..X", "X...X"),
+    )
+
+    /** Cyrillic letters drawn with the identical Latin glyph. */
+    private val aliases = mapOf(
+        'А' to 'A', 'В' to 'B', 'Е' to 'E', 'Ё' to 'E', 'К' to 'K', 'М' to 'M', 'Н' to 'H',
+        'О' to 'O', 'Р' to 'P', 'С' to 'C', 'Т' to 'T', 'Х' to 'X',
     )
 
     private val glyphs = HashMap<Char, Bitmap>()
@@ -96,7 +126,7 @@ object PixelFont {
         paint.colorFilter = filters.getOrPut(color) { PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN) }
         paint.alpha = alpha
         for (ch in text.uppercase()) {
-            val g = glyphs[ch]
+            val g = glyphs[ch] ?: aliases[ch]?.let { glyphs[it] }
             if (g != null) {
                 rect.set(cx, y, cx + GLYPH_W * size, y + GLYPH_H * size)
                 c.drawBitmap(g, null, rect, paint)

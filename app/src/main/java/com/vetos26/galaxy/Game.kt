@@ -33,7 +33,11 @@ class Game(context: Context) {
         const val COL_SPACING = 36f
         const val ROW_SPACING = 30f
 
-        const val PLAYER_SPEED = 150f
+        const val PLAYER_SPEED_MIN = 60f
+        const val PLAYER_SPEED_MAX = 170f
+        const val PLAYER_ACCEL_TIME = 0.18f
+        const val SWIPE_SENSITIVITY = 1.6f
+        const val FIRE_BUFFER = 0.18f
         const val MISSILE_SPEED = 480f
         const val ARC_RADIUS = 28f
         const val ARC_SPEED = 4.2f
@@ -42,18 +46,35 @@ class Game(context: Context) {
         val RED = Color.rgb(248, 56, 0)
         val YELLOW = Color.rgb(248, 216, 0)
         val CYAN = Color.rgb(60, 188, 252)
-        val PINK = Color.rgb(248, 120, 248)
-        val GREEN = Color.rgb(120, 232, 96)
         val WHITE = Color.WHITE
         val GREY = Color.rgb(140, 140, 170)
     }
 
-    enum class State { LOADING, TITLE, READY, PLAYING, DYING, STAGE_CLEAR, GAME_OVER }
+    enum class State { LOADING, MENU, READY, PLAYING, DYING, STAGE_CLEAR, GAME_OVER }
 
     val assets = Assets(context)
     private val sound = Sound(context)
+    private val haptics = Haptics(context)
+    private val settings = Settings(context)
     val controls = TouchControls()
-    private val prefs = context.getSharedPreferences("galaxy", Context.MODE_PRIVATE)
+
+    private val version: String = try {
+        @Suppress("DEPRECATION")
+        context.packageManager.getPackageInfo(context.packageName, 0).versionName ?: "1.0"
+    } catch (e: Exception) {
+        "1.0"
+    }
+
+    private val menu = Menu(assets, settings, version, object : Menu.Actions {
+        override fun newGame() = startGame()
+        override fun resume() = resumeGame()
+        override fun toMainMenu() = goToMainMenu()
+        override fun settingsChanged() = applySettings()
+        override fun click() {
+            sound.play(sound.menu, 0.6f)
+            haptics.pulse(12, 70)
+        }
+    })
 
     // ---------------------------------------------------------------- layout
     private var scale = 1f
@@ -61,7 +82,15 @@ class Game(context: Context) {
     private var vh = 640f
     private var playTop = 0f
     private var playBottom = 512f
+    private var screenBottom = 640f
     private var formTop = 60f
+
+    private var btnSize = 84f
+    private var fireSize = 96f
+    private var leftCx = 54f
+    private var rightCx = 150f
+    private var fireCx = 290f
+    private var btnCy = 576f
 
     // ----------------------------------------------------------------- state
     private var state = State.LOADING
@@ -71,7 +100,6 @@ class Game(context: Context) {
     private var firstReady = true
 
     private var score = 0
-    private var hiScore = prefs.getInt("hi", 5000)
     private var lives = 3
     private var level = 1
     private var extraLifeGiven = false
@@ -88,30 +116,88 @@ class Game(context: Context) {
     private var formDir = 1f
     private var diveTimer = 2f
 
+    // controls feel
+    private var moveTime = 0f
+    private var fireBuffer = 0f
+    private var prevTouchL = false
+    private var prevTouchR = false
+    private var prevTouchF = false
+    private var vibrationWasOn = true
+
     // ------------------------------------------------------------ rendering
     private val spritePaint = Paint().apply { isFilterBitmap = false; isAntiAlias = false }
     private val fillPaint = Paint()
     private val dst = RectF()
 
+    init {
+        sound.enabled = settings.sound
+        haptics.enabled = settings.vibration
+        vibrationWasOn = settings.vibration
+    }
+
     // ===================================================================
-    //  Layout
+    //  Layout & settings
     // ===================================================================
     fun resize(w: Int, h: Int, insetTop: Int, insetBottom: Int) {
         scale = min(w / VW, h / MIN_VH)
         offsetX = (w - VW * scale) / 2f
         vh = h / scale
         playTop = insetTop / scale
-        playBottom = vh - insetBottom / scale - CONTROLS_H
+        screenBottom = vh - insetBottom / scale
+        playBottom = screenBottom - CONTROLS_H
         formTop = playTop + 62f
         player.y = playBottom - 34f
 
         controls.scale = scale
         controls.offsetX = offsetX
         controls.panelTop = playBottom - 26f
-        controls.splitLR = 103f
-        controls.splitFire = 200f
 
+        menu.top = playTop
+        menu.bottom = screenBottom
+
+        layoutControls()
         stars.init(VW, vh)
+    }
+
+    private fun layoutControls() {
+        btnSize = when (settings.buttonSize) {
+            0 -> 68f
+            2 -> 100f
+            else -> 84f
+        }
+        fireSize = btnSize + 12f
+        val margin = 10f
+        val gap = 6f
+        if (!settings.leftHanded) {
+            leftCx = margin + btnSize / 2f
+            rightCx = leftCx + btnSize + gap
+            fireCx = VW - margin - fireSize / 2f
+        } else {
+            fireCx = margin + fireSize / 2f
+            rightCx = VW - margin - btnSize / 2f
+            leftCx = rightCx - btnSize - gap
+        }
+        // a little above the very bottom edge -> fewer conflicts with system gestures
+        btnCy = playBottom + CONTROLS_H / 2f - 2f
+        controls.leftCx = leftCx
+        controls.rightCx = rightCx
+        controls.fireCx = fireCx
+        controls.swipeMode = settings.swipeMode
+    }
+
+    private fun applySettings() {
+        sound.enabled = settings.sound
+        haptics.enabled = settings.vibration
+        if (settings.vibration && !vibrationWasOn) haptics.pulse(60, 200)
+        vibrationWasOn = settings.vibration
+        layoutControls()
+    }
+
+    /** 0.8 (easy) / 1.0 (normal) / 1.25 (hard) */
+    private fun difficultyFactor() = when (settings.difficulty) {
+        0 -> 0.8f
+        2 -> 1.25f
+        else -> 1f
     }
 
     // ===================================================================
@@ -126,26 +212,36 @@ class Game(context: Context) {
             return
         }
 
+        // one-shot input events of this frame
         val tap = controls.consumeTap()
+        val select = controls.consumeSelect()
         val pauseKey = controls.consumePauseKey()
-        val inGame = state != State.TITLE
+        val up = controls.consumeUp()
+        val down = controls.consumeDown()
+        val firePressed = controls.consumeFirePress()
+        val drag = controls.consumeDrag()
 
-        if (paused) {
-            if (tap || pauseKey) {
-                paused = false
-                sound.resumeAll()
-            }
+        if (state == State.MENU) {
+            stateTime += dt
+            menu.update(dt, tap, controls.tapX, controls.tapY, up, down, select)
             return
         }
-        if (inGame && (pauseKey || (tap && isPauseButton(controls.tapX, controls.tapY)))) {
+        if (paused) {
+            if (pauseKey && menu.screen == Menu.Screen.PAUSE) resumeGame()
+            else menu.update(dt, tap, controls.tapX, controls.tapY, up, down, select)
+            return
+        }
+        if (pauseKey || (tap && isPauseButton(controls.tapX, controls.tapY))) {
             pause()
             return
         }
 
+        updateButtonVibration()
+
         stateTime += dt
         when (state) {
-            State.TITLE -> if (tap && stateTime > 0.6f) startGame()
             State.READY -> {
+                updatePlayer(dt, false, drag)
                 updateFormation(dt)
                 updateEnemies(dt)
                 updateEffects(dt)
@@ -155,7 +251,7 @@ class Game(context: Context) {
                 }
             }
             State.PLAYING -> {
-                updatePlayer(dt)
+                updatePlayer(dt, firePressed, drag)
                 updateFormation(dt)
                 updateDiveScheduler(dt)
                 updateEnemies(dt)
@@ -176,7 +272,7 @@ class Game(context: Context) {
                 if (stateTime > 2.6f && (!divers || stateTime > 6f)) {
                     lives--
                     if (lives <= 0) {
-                        saveHiScore()
+                        settings.save()
                         setState(State.GAME_OVER)
                     } else {
                         respawn()
@@ -185,7 +281,7 @@ class Game(context: Context) {
                 }
             }
             State.STAGE_CLEAR -> {
-                updatePlayer(dt)
+                updatePlayer(dt, false, drag)
                 updateBullets(dt)
                 updateEffects(dt)
                 stars.speedFactor = 1f + min(stateTime, 2f) * 3f
@@ -200,9 +296,9 @@ class Game(context: Context) {
                 updateFormation(dt)
                 updateEnemies(dt)
                 updateEffects(dt)
-                if (stateTime > 4f || (tap && stateTime > 1.5f)) setState(State.TITLE)
+                if (stateTime > 4f || ((tap || select) && stateTime > 1.5f)) goToMainMenu()
             }
-            State.LOADING -> Unit
+            State.LOADING, State.MENU -> Unit
         }
     }
 
@@ -217,19 +313,27 @@ class Game(context: Context) {
         assets.loadNext()
         if (stateTime > 0.4f) assets.loadNext()
         controls.consumeTap()
-        if (assets.done && stateTime >= LOADING_MIN_TIME) setState(State.TITLE)
+        controls.consumeSelect()
+        if (assets.done && stateTime >= LOADING_MIN_TIME) {
+            menu.open(Menu.Screen.MAIN)
+            setState(State.MENU)
+        }
     }
 
     private fun loadingProgress() = min(assets.progress, stateTime / LOADING_MIN_TIME)
 
     private fun startGame() {
         score = 0
-        lives = 3
+        lives = if (settings.difficulty == 0) 5 else 3
         level = 1
         extraLifeGiven = false
         firstReady = true
+        paused = false
+        explosions.clear()
+        popups.clear()
         spawnWave()
         respawn()
+        controls.reset()
         sound.play(sound.start, 0.9f)
         setState(State.READY)
     }
@@ -240,6 +344,18 @@ class Game(context: Context) {
         missile = null
         enemyBullets.clear()
         diveTimer = 2.5f
+        moveTime = 0f
+        fireBuffer = 0f
+    }
+
+    private fun goToMainMenu() {
+        paused = false
+        stars.speedFactor = 1f
+        settings.save()
+        sound.resumeAll()
+        controls.reset()
+        menu.open(Menu.Screen.MAIN)
+        setState(State.MENU)
     }
 
     private fun spawnWave() {
@@ -263,13 +379,35 @@ class Game(context: Context) {
     private fun slotY(row: Int) = formTop + row * ROW_SPACING
 
     // ------------------------------------------------------------- player
-    private fun updatePlayer(dt: Float) {
+    private fun updateButtonVibration() {
+        val l = controls.touchLeftDown
+        val r = controls.touchRightDown
+        val f = controls.touchFireDown
+        if ((l && !prevTouchL) || (r && !prevTouchR) || (f && !prevTouchF)) haptics.pulse(14, 80)
+        prevTouchL = l
+        prevTouchR = r
+        prevTouchF = f
+    }
+
+    private fun updatePlayer(dt: Float, firePressed: Boolean, drag: Float) {
         if (!player.alive) return
-        if (controls.left) player.x -= PLAYER_SPEED * dt
-        if (controls.right) player.x += PLAYER_SPEED * dt
+        // smooth acceleration: a short tap moves the ship slowly -> precise aiming
+        val dir = (if (controls.right) 1 else 0) - (if (controls.left) 1 else 0)
+        moveTime = if (dir != 0) moveTime + dt else 0f
+        val ramp = min(1f, moveTime / PLAYER_ACCEL_TIME)
+        val speed = PLAYER_SPEED_MIN + (PLAYER_SPEED_MAX - PLAYER_SPEED_MIN) * ramp
+        player.x += dir * speed * dt
+        if (settings.swipeMode) player.x += drag * SWIPE_SENSITIVITY
         player.x = player.x.coerceIn(16f, VW - 16f)
-        if (state == State.PLAYING && controls.fire && missile == null) {
+
+        if (state != State.PLAYING) return
+        // fire buffer: a press shortly before the missile is free is not lost
+        if (firePressed) fireBuffer = FIRE_BUFFER
+        if (fireBuffer > 0f) fireBuffer -= dt
+        val wantFire = controls.fire || fireBuffer > 0f || settings.autoFire
+        if (wantFire && missile == null) {
             missile = Bullet(player.x, player.y - 18f, 0f, -MISSILE_SPEED)
+            fireBuffer = 0f
             sound.play(sound.shoot, 0.6f)
         }
     }
@@ -295,7 +433,7 @@ class Game(context: Context) {
         diveTimer -= dt
         if (diveTimer > 0f) return
         val inForm = enemies.count { it.alive && it.state == EnemyState.FORMATION }
-        val interval = max(0.7f, 2.8f - level * 0.25f)
+        val interval = max(0.6f, 2.8f - level * 0.25f) / difficultyFactor()
         diveTimer = if (inForm <= 4) interval * 0.5f else interval * (0.7f + Random.nextFloat() * 0.6f)
         tryStartDive()
     }
@@ -304,7 +442,7 @@ class Game(context: Context) {
         val inForm = enemies.filter { it.alive && it.state == EnemyState.FORMATION }
         if (inForm.isEmpty()) return
         val diving = enemies.count { it.alive && it.state != EnemyState.FORMATION }
-        val maxDivers = min(2 + level / 2, 7)
+        val maxDivers = (2 + level / 2 + settings.difficulty - 1).coerceIn(1, 8)
         if (diving >= maxDivers) return
 
         val flags = inForm.filter { it.type == EnemyType.FLAGSHIP }
@@ -329,8 +467,8 @@ class Game(context: Context) {
             val minC = inForm.minOf { it.col }
             val maxC = inForm.maxOf { it.col }
             val edge = inForm.filter { it.col == minC || it.col == maxC }
-            val pool = if (edge.isNotEmpty() && Random.nextFloat() < 0.6f) edge else inForm
-            val pick = pool.filter { it.type != EnemyType.FLAGSHIP }.ifEmpty { pool }.random()
+            val candidates = if (edge.isNotEmpty() && Random.nextFloat() < 0.6f) edge else inForm
+            val pick = candidates.filter { it.type != EnemyType.FLAGSHIP }.ifEmpty { candidates }.random()
             launch(pick)
         }
         sound.play(sound.dive, 0.5f)
@@ -350,7 +488,7 @@ class Game(context: Context) {
 
     // ------------------------------------------------------------- enemies
     private fun updateEnemies(dt: Float) {
-        val diveSpeed = min(120f + level * 9f, 210f)
+        val diveSpeed = min(120f + level * 9f, 210f) * difficultyFactor()
         val maxVx = min(90f + level * 6f, 150f)
         for (e in enemies) {
             if (!e.alive) continue
@@ -436,7 +574,7 @@ class Game(context: Context) {
         if (e.shotTimer > 0f) return
         e.shotsLeft--
         e.shotTimer = 0.3f
-        val vy = min(200f + level * 10f, 300f)
+        val vy = min(200f + level * 10f, 300f) * difficultyFactor()
         val t = (player.y - e.y) / vy
         val vx = ((player.x - e.x) / max(t, 0.3f) * 0.5f).coerceIn(-70f, 70f)
         enemyBullets.add(Bullet(e.x, e.y + 12f, vx, vy))
@@ -523,6 +661,7 @@ class Game(context: Context) {
         missile = null
         explosions.add(Explosion(player.x, player.y, true))
         sound.play(sound.die, 1f)
+        haptics.pulse(300, 255)
         setState(State.DYING)
     }
 
@@ -532,52 +671,49 @@ class Game(context: Context) {
             extraLifeGiven = true
             lives++
             sound.play(sound.extra)
+            haptics.pulse(80, 180)
         }
-        if (score > hiScore) hiScore = score
-    }
-
-    private fun saveHiScore() {
-        prefs.edit().putInt("hi", hiScore).apply()
+        settings.updateHiScore(score)
     }
 
     // ------------------------------------------------------- pause / back
     private fun pause() {
-        if (state == State.LOADING || state == State.TITLE) return
+        if (state == State.LOADING || state == State.MENU || paused) return
         paused = true
         controls.reset()
         sound.stopAll()
+        menu.open(Menu.Screen.PAUSE)
+    }
+
+    private fun resumeGame() {
+        paused = false
+        controls.reset()
+        sound.resumeAll()
     }
 
     fun onAppPaused() {
         pause()
-        saveHiScore()
+        settings.save()
     }
 
     /** @return true if the back press was consumed. */
     fun onBack(): Boolean {
         return when {
-            state == State.LOADING || state == State.TITLE -> false
-            !paused -> { pause(); true }
-            else -> {
-                // second back while paused -> back to the title screen
-                paused = false
-                saveHiScore()
-                sound.resumeAll()
-                setState(State.TITLE)
-                true
-            }
+            state == State.LOADING -> false
+            state == State.MENU || paused -> menu.back()
+            else -> { pause(); true }
         }
     }
 
     fun release() {
-        saveHiScore()
+        settings.save()
         sound.release()
     }
 
     private fun pauseButtonX() = VW - 20f
     private fun pauseButtonY() = playTop + 44f
     private fun isPauseButton(x: Float, y: Float) =
-        abs(x - pauseButtonX()) < 24f && abs(y - pauseButtonY()) < 24f
+        abs(x - pauseButtonX()) < 26f && abs(y - pauseButtonY()) < 26f
 
     // ===================================================================
     //  Rendering
@@ -591,25 +727,27 @@ class Game(context: Context) {
 
         when (state) {
             State.LOADING -> drawLoading(c)
-            State.TITLE -> {
-                stars.draw(c, playTop, playBottom)
-                drawTitle(c)
-                drawControls(c)
+            State.MENU -> {
+                stars.draw(c, 0f, vh)
+                menu.draw(c)
             }
             else -> {
                 stars.draw(c, playTop, playBottom)
                 drawGame(c)
                 drawControls(c)
-                if (paused) drawPaused(c)
+                if (paused) {
+                    fillPaint.color = Color.argb(185, 0, 0, 0)
+                    c.drawRect(0f, 0f, VW, vh, fillPaint)
+                    menu.draw(c)
+                }
             }
         }
         c.restore()
     }
 
-    private fun sprite(c: Canvas, bmp: Bitmap, x: Float, y: Float, size: Float = 32f, rotation: Float = 0f, alpha: Int = 255) {
+    private fun sprite(c: Canvas, bmp: Bitmap, x: Float, y: Float, size: Float = 32f, rotation: Float = 0f) {
         val h = size / 2f
         dst.set(x - h, y - h, x + h, y + h)
-        spritePaint.alpha = alpha
         if (rotation != 0f) {
             c.save()
             c.rotate(rotation, x, y)
@@ -618,7 +756,6 @@ class Game(context: Context) {
         } else {
             c.drawBitmap(bmp, null, dst, spritePaint)
         }
-        spritePaint.alpha = 255
     }
 
     private fun blink(rate: Float = 2f) = ((time * rate).toInt() % 2) == 0
@@ -630,7 +767,7 @@ class Game(context: Context) {
         val cy = vh * 0.36f
         val lw = logo.width.toFloat()
         val lh = logo.height.toFloat()
-        // logo slides in and "breathes"
+        // logo slides in from above and fades in
         val appear = min(1f, stateTime / 0.6f)
         val ly = cy - lh / 2f - (1f - appear) * 60f
         dst.set(VW / 2f - lw / 2f, ly, VW / 2f + lw / 2f, ly + lh)
@@ -661,52 +798,11 @@ class Game(context: Context) {
             sprite(c, assets["player"], bx + bw * p, by - 22f)
         }
         val dots = ".".repeat(((time * 3).toInt() % 4))
-        PixelFont.drawShadow(c, "LOADING$dots", bx, by + 22f, 2f, WHITE)
+        PixelFont.drawShadow(c, "ЗАГРУЗКА$dots", bx, by + 22f, 2f, WHITE)
         PixelFont.drawShadow(c, "${(p * 100).toInt()}%", bx + bw, by + 22f, 2f, YELLOW, Align.RIGHT)
 
         PixelFont.draw(c, "(C) 2026 VETOS26", VW / 2f, vh - 40f, 1.5f, GREY, Align.CENTER)
         PixelFont.draw(c, "MADE WITH KOTLIN", VW / 2f, vh - 24f, 1.5f, GREY, Align.CENTER)
-    }
-
-    // ---------------------------------------------------------- title screen
-    private fun drawTitle(c: Canvas) {
-        drawHud(c, showPause = false)
-        val logo = assets.logo
-        val top = playTop + 52f
-        dst.set(VW / 2f - logo.width / 2f, top, VW / 2f + logo.width / 2f, top + logo.height)
-        c.drawBitmap(logo, null, dst, spritePaint)
-
-        var y = top + logo.height + 14f
-        PixelFont.drawShadow(c, "WE ARE THE GALAXY ALIENS", VW / 2f, y, 1.6f, CYAN, Align.CENTER)
-        y += 16f
-        PixelFont.drawShadow(c, "MISSION: DESTROY ALIENS", VW / 2f, y, 1.6f, PINK, Align.CENTER)
-
-        val space = playBottom - y
-        val rowH = min(36f, (space - 110f) / 4f).coerceAtLeast(26f)
-        y += 22f
-        PixelFont.drawShadow(c, "- SCORE ADVANCE TABLE -", VW / 2f, y, 1.6f, WHITE, Align.CENTER)
-        y += 16f
-        PixelFont.draw(c, "CONVOY", 190f, y, 1.6f, GREY, Align.CENTER)
-        PixelFont.draw(c, "CHARGER", 290f, y, 1.6f, GREY, Align.CENTER)
-        y += 12f + rowH / 2f
-        val rows = arrayOf(
-            Triple(EnemyType.FLAGSHIP, "60", "150-800"),
-            Triple(EnemyType.RED, "50", "100"),
-            Triple(EnemyType.PURPLE, "40", "80"),
-            Triple(EnemyType.BLUE, "30", "60"),
-        )
-        val frame = if (blink(3f)) 1 else 2
-        for ((type, convoy, charger) in rows) {
-            sprite(c, assets["${type.sprite}_$frame"], 86f, y)
-            PixelFont.draw(c, convoy, 190f, y - 6f, 1.8f, YELLOW, Align.CENTER)
-            PixelFont.draw(c, charger, 290f, y - 6f, 1.8f, YELLOW, Align.CENTER)
-            y += rowH
-        }
-
-        if (blink(1.6f)) {
-            PixelFont.drawShadow(c, "TAP TO START", VW / 2f, playBottom - 34f, 2.4f, YELLOW, Align.CENTER)
-        }
-        PixelFont.draw(c, "(C) 2026 VETOS26", VW / 2f, playBottom - 12f, 1.2f, GREY, Align.CENTER)
     }
 
     // ------------------------------------------------------------- gameplay
@@ -741,7 +837,7 @@ class Game(context: Context) {
             PixelFont.drawShadow(c, p.text, p.x, p.y, 1.6f, CYAN, Align.CENTER)
         }
 
-        drawHud(c, showPause = true)
+        drawHud(c)
 
         // reserve ships & level flags
         val iconY = playBottom - 8f
@@ -768,20 +864,15 @@ class Game(context: Context) {
         }
     }
 
-    private fun drawHud(c: Canvas, showPause: Boolean) {
+    private fun drawHud(c: Canvas) {
         val y = playTop + 6f
-        if (state == State.TITLE || blink(2f) || state != State.PLAYING) {
+        if (blink(2f) || state != State.PLAYING) {
             PixelFont.draw(c, "1UP", 14f, y, 1.8f, RED)
         }
         PixelFont.draw(c, score.toString().padStart(6, '0'), 14f, y + 16f, 1.8f, WHITE)
         PixelFont.draw(c, "HI-SCORE", VW / 2f, y, 1.8f, RED, Align.CENTER)
-        PixelFont.draw(c, hiScore.toString().padStart(6, '0'), VW / 2f, y + 16f, 1.8f, WHITE, Align.CENTER)
-        if (showPause) {
-            sprite(c, assets["btn_pause"], pauseButtonX(), pauseButtonY(), 28f)
-        } else {
-            PixelFont.draw(c, "STAGE", VW - 14f, y, 1.8f, RED, Align.RIGHT)
-            PixelFont.draw(c, level.toString(), VW - 14f, y + 16f, 1.8f, WHITE, Align.RIGHT)
-        }
+        PixelFont.draw(c, settings.hiScore.toString().padStart(6, '0'), VW / 2f, y + 16f, 1.8f, WHITE, Align.CENTER)
+        sprite(c, assets["btn_pause"], pauseButtonX(), pauseButtonY(), 28f)
     }
 
     private fun drawControls(c: Canvas) {
@@ -793,20 +884,27 @@ class Game(context: Context) {
         fillPaint.color = Color.rgb(24, 30, 80)
         c.drawRect(0f, top + 4f, VW, top + 5f, fillPaint)
 
-        val cy = top + CONTROLS_H / 2f + 2f
-        val size = 84f
-        sprite(c, assets[if (controls.left) "btn_left_on" else "btn_left"], 54f, cy, size)
-        sprite(c, assets[if (controls.right) "btn_right_on" else "btn_right"], 150f, cy, size)
-        sprite(c, assets[if (controls.fire) "btn_fire_on" else "btn_fire"], VW - 70f, cy, size + 12f)
-        PixelFont.draw(c, "FIRE", VW - 70f, cy + 46f, 1.2f, GREY, Align.CENTER)
-    }
-
-    private fun drawPaused(c: Canvas) {
-        fillPaint.color = Color.argb(170, 0, 0, 0)
-        c.drawRect(0f, 0f, VW, vh, fillPaint)
-        val my = vh * 0.4f
-        PixelFont.drawShadow(c, "PAUSED", VW / 2f, my, 4f, YELLOW, Align.CENTER)
-        if (blink(1.5f)) PixelFont.drawShadow(c, "TAP TO CONTINUE", VW / 2f, my + 44f, 2f, WHITE, Align.CENTER)
-        PixelFont.draw(c, "BACK - EXIT TO MENU", VW / 2f, my + 70f, 1.5f, GREY, Align.CENTER)
+        if (settings.swipeMode) {
+            // swipe strip in place of the arrow buttons
+            val x0 = min(leftCx, rightCx) - btnSize / 2f
+            val x1 = max(leftCx, rightCx) + btnSize / 2f
+            val h = btnSize * 0.42f
+            val active = controls.dragging
+            fillPaint.color = if (active) Color.rgb(90, 170, 255) else Color.rgb(48, 64, 160)
+            c.drawRoundRect(x0, btnCy - h, x1, btnCy + h, 14f, 14f, fillPaint)
+            fillPaint.color = if (active) Color.rgb(30, 50, 110) else Color.rgb(18, 22, 56)
+            c.drawRoundRect(x0 + 3f, btnCy - h + 3f, x1 - 3f, btnCy + h - 3f, 12f, 12f, fillPaint)
+            val col = if (active) YELLOW else WHITE
+            PixelFont.draw(c, "<<", x0 + 12f, btnCy - 7f, 2f, col)
+            PixelFont.draw(c, ">>", x1 - 12f, btnCy - 7f, 2f, col, Align.RIGHT)
+            PixelFont.draw(c, "ВЕДИ", (x0 + x1) / 2f, btnCy - 10f, 1.4f, GREY, Align.CENTER)
+            PixelFont.draw(c, "ПАЛЬЦЕМ", (x0 + x1) / 2f, btnCy + 2f, 1.4f, GREY, Align.CENTER)
+        } else {
+            sprite(c, assets[if (controls.left) "btn_left_on" else "btn_left"], leftCx, btnCy, btnSize)
+            sprite(c, assets[if (controls.right) "btn_right_on" else "btn_right"], rightCx, btnCy, btnSize)
+        }
+        sprite(c, assets[if (controls.fire) "btn_fire_on" else "btn_fire"], fireCx, btnCy, fireSize)
+        val label = if (settings.autoFire) "АВТО" else "ОГОНЬ"
+        PixelFont.draw(c, label, fireCx, btnCy + fireSize / 2f - 4f, 1.2f, GREY, Align.CENTER)
     }
 }

@@ -72,6 +72,7 @@ class Sound(context: Context) {
     val start = pool.load(context, R.raw.sfx_start, 1)
     val extra = pool.load(context, R.raw.sfx_extra, 1)
     val clear = pool.load(context, R.raw.sfx_clear, 1)
+    val menu = pool.load(context, R.raw.sfx_menu, 1)
 
     var enabled = true
 

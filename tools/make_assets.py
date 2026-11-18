@@ -437,6 +437,7 @@ start = [(N['C5'], 1), (N['E5'], 1), (N['G5'], 1), (N['C6'], 2), (0, 1), (N['G5'
 bass = [(N['C4'], 4), (N['G4'], 4), (N['C4'], 4), (N['E4'], 2), (N['G4'], 4)]
 write_wav('sfx_start', mix(melody(start, vol=0.25, duty=0.25), melody(bass, vol=0.15, duty=0.5)))
 write_wav('sfx_extra', melody([(N['C6'], 1), (N['E6'], 1), (N['G6'], 1), (N['E6'], 1), (N['G6'], 3)], 0.07, 0.25, 0.25))
+write_wav('sfx_menu', square(lambda t: 880 if t < 0.03 else 1320, 0.07, lambda t: 0.3 * (1 - t / 0.07), duty=0.25))
 write_wav('sfx_clear', melody([(N['G5'], 1), (N['A5'], 1), (N['B5'], 1), (N['C6'], 1), (N['E6'], 1), (N['G6'], 4)], 0.09, 0.5, 0.22))
 
 
