@@ -808,7 +808,7 @@ class Game(context: Context) {
         PixelFont.drawShadow(c, "ЗАГРУЗКА$dots", bx, by + 22f, 2f, WHITE)
         PixelFont.drawShadow(c, "${(p * 100).toInt()}%", bx + bw, by + 22f, 2f, YELLOW, Align.RIGHT)
 
-        PixelFont.draw(c, "(C) 2026 HOME STUDIO", VW / 2f, vh - 40f, 1.5f, GREY, Align.CENTER)
+        PixelFont.draw(c, "(C) 2026 HomeStudio", VW / 2f, vh - 40f, 1.5f, GREY, Align.CENTER)
         PixelFont.draw(c, "MADE WITH KOTLIN", VW / 2f, vh - 24f, 1.5f, GREY, Align.CENTER)
     }
 

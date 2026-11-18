@@ -49,22 +49,9 @@ class Menu(
     private val pauseItems = arrayOf("ПРОДОЛЖИТЬ", "НАСТРОЙКИ", "ГЛАВНОЕ МЕНЮ")
     private val settingsCount = 9
 
-    /**
-     * Credits: first = text, second = style. Edit freely.
-     * 0 - section title, 4 - continuation of a section title, 1 - name,
-     * 3 - big title, 2 - big closing line.
-     */
-    private val credits = listOf(
-        "ИГРА GALAXY" to 3,
-        "АВТОР" to 0, "ВИТАЛИЙ" to 1,
-        "РАЗРАБОТКА, ДИЗАЙН, ЗВУКИ," to 0, "ИГРОВАЯ ЛОГИКА" to 4, "ВИТАЛИЙ" to 1,
-        "КОНЦЕПЦИЯ И ВИЗУАЛЬНЫЙ СТИЛЬ" to 0, "ВИТАЛИЙ" to 1,
-        "СПАСИБО ЗА ТО, ЧТО ИГРАЕТЕ!" to 2,
-    )
 
     // ------------------------------------------------------------ colors
     private val yellow = Color.rgb(248, 216, 0)
-    private val orange = Color.rgb(248, 152, 40)
     private val red = Color.rgb(248, 56, 0)
     private val cyan = Color.rgb(60, 188, 252)
     private val pink = Color.rgb(248, 120, 248)
@@ -379,36 +366,7 @@ class Menu(
 
     private fun drawCredits(c: Canvas) {
         PixelFont.drawShadow(c, "АВТОРЫ", Game.VW / 2f, top + 22f, 3.2f, yellow, Align.CENTER)
-        var y = top + 78f
-        for ((text, style) in credits) {
-            when (style) {
-                0 -> {
-                    y += 16f
-                    PixelFont.draw(c, text, Game.VW / 2f, y, 1.6f, cyan, Align.CENTER)
-                    y += 15f
-                }
-                4 -> {
-                    PixelFont.draw(c, text, Game.VW / 2f, y, 1.6f, cyan, Align.CENTER)
-                    y += 15f
-                }
-                1 -> {
-                    y += 3f
-                    PixelFont.drawShadow(c, text, Game.VW / 2f, y, 2.4f, Color.WHITE, Align.CENTER)
-                    y += 20f
-                }
-                3 -> {
-                    PixelFont.drawShadow(c, text, Game.VW / 2f, y, 3f, orange, Align.CENTER)
-                    y += 26f
-                }
-                else -> {
-                    y += 26f
-                    // shrink long lines so they always fit the screen width
-                    val size = min(2.4f, (Game.VW - 24f) / PixelFont.width(text, 1f))
-                    PixelFont.drawShadow(c, text, Game.VW / 2f, y, size, yellow, Align.CENTER)
-                    y += 7f * size + 8f
-                }
-            }
-        }
+        val y = Credits.draw(c, top + 76f)
         // parade of aliens chasing the ship
         val py = min(y + 34f, itemCenterY(0) - 44f)
         val frame = if (blink(6f)) 1 else 2

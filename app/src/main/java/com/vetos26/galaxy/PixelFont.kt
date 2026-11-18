@@ -90,12 +90,67 @@ object PixelFont {
         'Э' to arrayOf(".XXX.", "X...X", "....X", "..XXX", "....X", "X...X", ".XXX."),
         'Ю' to arrayOf("X..X.", "X.X.X", "X.X.X", "XXX.X", "X.X.X", "X.X.X", "X..X."),
         'Я' to arrayOf(".XXXX", "X...X", "X...X", ".XXXX", "..X.X", ".X..X", "X...X"),
+        // ---- lowercase (8 rows: the last one is for descenders)
+        'a' to arrayOf(".....", ".....", ".XXX.", "....X", ".XXXX", "X...X", ".XXXX", "....."),
+        'b' to arrayOf("X....", "X....", "XXXX.", "X...X", "X...X", "X...X", "XXXX.", "....."),
+        'c' to arrayOf(".....", ".....", ".XXX.", "X....", "X....", "X....", ".XXX.", "....."),
+        'd' to arrayOf("....X", "....X", ".XXXX", "X...X", "X...X", "X...X", ".XXXX", "....."),
+        'e' to arrayOf(".....", ".....", ".XXX.", "X...X", "XXXXX", "X....", ".XXX.", "....."),
+        'f' to arrayOf("..XX.", ".X...", "XXX..", ".X...", ".X...", ".X...", ".X...", "....."),
+        'g' to arrayOf(".....", ".....", ".XXXX", "X...X", "X...X", ".XXXX", "....X", ".XXX."),
+        'h' to arrayOf("X....", "X....", "XXXX.", "X...X", "X...X", "X...X", "X...X", "....."),
+        'i' to arrayOf("..X..", ".....", ".XX..", "..X..", "..X..", "..X..", ".XXX.", "....."),
+        'j' to arrayOf("...X.", ".....", "..XX.", "...X.", "...X.", "...X.", "X..X.", ".XX.."),
+        'k' to arrayOf("X....", "X....", "X..X.", "X.X..", "XX...", "X.X..", "X..X.", "....."),
+        'l' to arrayOf(".XX..", "..X..", "..X..", "..X..", "..X..", "..X..", ".XXX.", "....."),
+        'm' to arrayOf(".....", ".....", "XX.X.", "X.X.X", "X.X.X", "X.X.X", "X.X.X", "....."),
+        'n' to arrayOf(".....", ".....", "XXXX.", "X...X", "X...X", "X...X", "X...X", "....."),
+        'o' to arrayOf(".....", ".....", ".XXX.", "X...X", "X...X", "X...X", ".XXX.", "....."),
+        'p' to arrayOf(".....", ".....", "XXXX.", "X...X", "X...X", "XXXX.", "X....", "X...."),
+        'q' to arrayOf(".....", ".....", ".XXXX", "X...X", "X...X", ".XXXX", "....X", "....X"),
+        'r' to arrayOf(".....", ".....", "X.XX.", "XX..X", "X....", "X....", "X....", "....."),
+        's' to arrayOf(".....", ".....", ".XXXX", "X....", ".XXX.", "....X", "XXXX.", "....."),
+        't' to arrayOf(".X...", ".X...", "XXX..", ".X...", ".X...", ".X..X", "..XX.", "....."),
+        'u' to arrayOf(".....", ".....", "X...X", "X...X", "X...X", "X..XX", ".XX.X", "....."),
+        'v' to arrayOf(".....", ".....", "X...X", "X...X", "X...X", ".X.X.", "..X..", "....."),
+        'w' to arrayOf(".....", ".....", "X...X", "X.X.X", "X.X.X", "X.X.X", ".X.X.", "....."),
+        'x' to arrayOf(".....", ".....", "X...X", ".X.X.", "..X..", ".X.X.", "X...X", "....."),
+        'y' to arrayOf(".....", ".....", "X...X", "X...X", "X...X", ".XXXX", "....X", ".XXX."),
+        'z' to arrayOf(".....", ".....", "XXXXX", "...X.", "..X..", ".X...", "XXXXX", "....."),
+        'б' to arrayOf("...XX", ".XX..", "X....", "XXXX.", "X...X", "X...X", ".XXX.", "....."),
+        'в' to arrayOf(".....", ".....", "XXXX.", "X...X", "XXXX.", "X...X", "XXXX.", "....."),
+        'г' to arrayOf(".....", ".....", "XXXXX", "X....", "X....", "X....", "X....", "....."),
+        'д' to arrayOf(".....", ".....", "..XX.", ".X.X.", ".X.X.", ".X.X.", "XXXXX", "X...X"),
+        'ё' to arrayOf(".X.X.", ".....", ".XXX.", "X...X", "XXXXX", "X....", ".XXX.", "....."),
+        'ж' to arrayOf(".....", ".....", "X.X.X", ".XXX.", "..X..", ".XXX.", "X.X.X", "....."),
+        'з' to arrayOf(".....", ".....", "XXXX.", "....X", "..XX.", "....X", "XXXX.", "....."),
+        'и' to arrayOf(".....", ".....", "X...X", "X..XX", "X.X.X", "XX..X", "X...X", "....."),
+        'й' to arrayOf(".X.X.", "..X..", "X...X", "X..XX", "X.X.X", "XX..X", "X...X", "....."),
+        'к' to arrayOf(".....", ".....", "X..X.", "X.X..", "XX...", "X.X..", "X..X.", "....."),
+        'л' to arrayOf(".....", ".....", "..XXX", ".X..X", ".X..X", ".X..X", "X...X", "....."),
+        'м' to arrayOf(".....", ".....", "X...X", "XX.XX", "X.X.X", "X...X", "X...X", "....."),
+        'н' to arrayOf(".....", ".....", "X...X", "X...X", "XXXXX", "X...X", "X...X", "....."),
+        'п' to arrayOf(".....", ".....", "XXXXX", "X...X", "X...X", "X...X", "X...X", "....."),
+        'т' to arrayOf(".....", ".....", "XXXXX", "..X..", "..X..", "..X..", "..X..", "....."),
+        'ф' to arrayOf(".....", "..X..", ".XXX.", "X.X.X", "X.X.X", ".XXX.", "..X..", "..X.."),
+        'ц' to arrayOf(".....", ".....", "X..X.", "X..X.", "X..X.", "X..X.", "XXXXX", "....X"),
+        'ч' to arrayOf(".....", ".....", "X...X", "X...X", ".XXXX", "....X", "....X", "....."),
+        'ш' to arrayOf(".....", ".....", "X.X.X", "X.X.X", "X.X.X", "X.X.X", "XXXXX", "....."),
+        'щ' to arrayOf(".....", ".....", "X.X.X", "X.X.X", "X.X.X", "X.X.X", "XXXXX", "....X"),
+        'ъ' to arrayOf(".....", ".....", "XX...", ".X...", ".XXX.", ".X..X", ".XXX.", "....."),
+        'ы' to arrayOf(".....", ".....", "X...X", "X...X", "XXX.X", "X.X.X", "XXX.X", "....."),
+        'ь' to arrayOf(".....", ".....", "X....", "X....", "XXXX.", "X...X", "XXXX.", "....."),
+        'э' to arrayOf(".....", ".....", ".XXX.", "....X", "..XXX", "....X", ".XXX.", "....."),
+        'ю' to arrayOf(".....", ".....", "X..X.", "X.X.X", "XXX.X", "X.X.X", "X..X.", "....."),
+        'я' to arrayOf(".....", ".....", ".XXXX", "X...X", ".XXXX", "..X.X", "X...X", "....."),
+        '—' to arrayOf(".....", ".....", ".....", "XXXXX", ".....", ".....", "....."),
     )
 
     /** Cyrillic letters drawn with the identical Latin glyph. */
     private val aliases = mapOf(
         'А' to 'A', 'В' to 'B', 'Е' to 'E', 'Ё' to 'E', 'К' to 'K', 'М' to 'M', 'Н' to 'H',
-        'О' to 'O', 'Р' to 'P', 'С' to 'C', 'Т' to 'T', 'Х' to 'X', '—' to '-', '–' to '-',
+        'О' to 'O', 'Р' to 'P', 'С' to 'C', 'Т' to 'T', 'Х' to 'X', '–' to '-',
+        'а' to 'a', 'е' to 'e', 'о' to 'o', 'р' to 'p', 'с' to 'c', 'у' to 'y', 'х' to 'x',
     )
 
     private val glyphs = HashMap<Char, Bitmap>()
@@ -105,12 +160,42 @@ object PixelFont {
 
     init {
         for ((ch, rows) in glyphData) {
-            val bmp = Bitmap.createBitmap(GLYPH_W, GLYPH_H, Bitmap.Config.ARGB_8888)
-            for (y in 0 until GLYPH_H) for (x in 0 until GLYPH_W) {
+            val bmp = Bitmap.createBitmap(GLYPH_W, rows.size, Bitmap.Config.ARGB_8888)
+            for (y in rows.indices) for (x in 0 until GLYPH_W) {
                 if (rows[y][x] == 'X') bmp.setPixel(x, y, Color.WHITE)
             }
             glyphs[ch] = bmp
         }
+    }
+
+    /** Exact glyph, Latin look-alike, or the uppercase variant if a lowercase glyph is missing. */
+    private fun glyphFor(ch: Char): Bitmap? {
+        glyphs[ch]?.let { return it }
+        aliases[ch]?.let { a -> glyphs[a]?.let { return it } }
+        val up = ch.uppercaseChar()
+        if (up != ch) {
+            glyphs[up]?.let { return it }
+            aliases[up]?.let { a -> glyphs[a]?.let { return it } }
+        }
+        return null
+    }
+
+    /** Splits [text] into lines (by words) that fit into [maxWidth] at the given [size]. */
+    fun wrap(text: String, size: Float, maxWidth: Float): List<String> {
+        val out = ArrayList<String>()
+        var cur = ""
+        for (word in text.split(' ')) {
+            if (word.isEmpty()) continue
+            val candidate = if (cur.isEmpty()) word else "$cur $word"
+            if (cur.isNotEmpty() && width(candidate, size) > maxWidth) {
+                out.add(cur)
+                cur = word
+            } else {
+                cur = candidate
+            }
+        }
+        if (cur.isNotEmpty()) out.add(cur)
+        return out
     }
 
     fun width(text: String, size: Float) = if (text.isEmpty()) 0f else (text.length * (GLYPH_W + 1) - 1) * size
@@ -125,10 +210,10 @@ object PixelFont {
         }
         paint.colorFilter = filters.getOrPut(color) { PorterDuffColorFilter(color, PorterDuff.Mode.SRC_IN) }
         paint.alpha = alpha
-        for (ch in text.uppercase()) {
-            val g = glyphs[ch] ?: aliases[ch]?.let { glyphs[it] }
+        for (ch in text) {
+            val g = glyphFor(ch)
             if (g != null) {
-                rect.set(cx, y, cx + GLYPH_W * size, y + GLYPH_H * size)
+                rect.set(cx, y, cx + GLYPH_W * size, y + g.height * size)
                 c.drawBitmap(g, null, rect, paint)
             }
             cx += (GLYPH_W + 1) * size

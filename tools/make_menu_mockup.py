@@ -28,8 +28,8 @@ class Screen:
         if shadow: s.text(t, x+size, y+size, size, (20,20,60), align)
         w = (len(t)*6-1)*size
         x -= w/2 if align == 'c' else (w if align == 'r' else 0)
-        for ch in t.upper():
-            for r, row in enumerate(FONT.get(ch, [])):
+        for ch in t:
+            for r, row in enumerate(FONT.get(ch) or FONT.get(ch.upper(), [])):
                 for c, v in enumerate(row):
                     if v == 'X':
                         s.d.rectangle([(x+c*size)*K, (y+r*size)*K, (x+(c+1)*size)*K-1, (y+(r+1)*size)*K-1], fill=col)
@@ -106,16 +106,24 @@ s.save('menu_settings.png')
 # credits
 s = Screen()
 s.text('АВТОРЫ', 180, 22, 3.2, YEL, 'c', True)
-mk = re.search(r'private val credits = listOf\((.*?)\n    \)', open(os.path.join(ROOT, 'app/src/main/java/com/vetos26/galaxy/Menu.kt'), encoding='utf-8').read(), re.S).group(1)
-y = 78
+ck = open(os.path.join(ROOT, 'app/src/main/java/com/vetos26/galaxy/Credits.kt'), encoding='utf-8').read()
 ORANGE = (248, 152, 40)
-for t, st in re.findall(r'"([^"]*)" to (\d)', mk):
-    if st == '0': y += 16; s.text(t, 180, y, 1.6, CY, 'c'); y += 15
-    elif st == '4': s.text(t, 180, y, 1.6, CY, 'c'); y += 15
-    elif st == '1': y += 3; s.text(t, 180, y, 2.4, WHITE, 'c', True); y += 20
-    elif st == '3': s.text(t, 180, y, 3, ORANGE, 'c', True); y += 26
+def wrap(t, size, maxw):
+    out, cur = [], ''
+    for w in t.split(' '):
+        cand = w if not cur else cur + ' ' + w
+        if cur and (len(cand) * 6 - 1) * size > maxw: out.append(cur); cur = w
+        else: cur = cand
+    return out + ([cur] if cur else [])
+y = 76
+MAXW = VW - 28
+for t, st in re.findall(r'"([^"]*)" to Style\.(\w+)', ck):
+    if st == 'TITLE': s.text(t, 180, y, 3, ORANGE, 'c', True); y += 21 + 18
+    elif st == 'LINE':
+        for line in wrap(t, 1.8, MAXW): s.text(line, 180, y, 1.8, WHITE, 'c', True); y += 8 * 1.8 + 3
+        y += 10
     else:
-        y += 26; sz = min(2.4, (VW - 24) / (len(t) * 6 - 1)); s.text(t, 180, y, sz, YEL, 'c', True); y += 7 * sz + 8
+        y += 12; sz = min(2.2, MAXW / (len(t) * 6 - 1)); s.text(t, 180, y, sz, YEL, 'c', True); y += 8 * sz + 4
 py = y + 34
 for i, n in enumerate(['player', 'enemy_blue_1', 'enemy_purple_2', 'enemy_red_1', 'enemy_flagship_2']):
     s.spr(n, 300 - i*40, py, 28 if i == 0 else 26)
