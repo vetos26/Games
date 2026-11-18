@@ -253,7 +253,7 @@ class Menu(
 
         drawButtons(c, mainItems)
 
-        PixelFont.draw(c, "(C) 2026 VETOS26   V$version", Game.VW / 2f, bottom - 16f, 1.2f, grey, Align.CENTER)
+        PixelFont.draw(c, "(C) 2026 HOME STUDIO   V$version", Game.VW / 2f, bottom - 16f, 1.2f, grey, Align.CENTER)
     }
 
     // ------------------------------------------------------- score table
